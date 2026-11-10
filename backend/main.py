@@ -5,7 +5,7 @@ Main FastAPI Application Server
 
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -46,6 +46,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    """Returns SVG favicon to eliminate 404 warnings."""
+    svg_icon = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="10" fill="#00FF41" />
+        <ellipse cx="50" cy="50" rx="42" ry="16" fill="none" stroke="#00FFFF" stroke-width="3" transform="rotate(30 50 50)" />
+        <ellipse cx="50" cy="50" rx="42" ry="16" fill="none" stroke="#00FF41" stroke-width="3" transform="rotate(90 50 50)" />
+        <ellipse cx="50" cy="50" rx="42" ry="16" fill="none" stroke="#00FFFF" stroke-width="3" transform="rotate(150 50 50)" />
+    </svg>"""
+    return Response(content=svg_icon, media_type="image/svg+xml")
 
 
 @app.get("/api/health")
@@ -94,8 +106,12 @@ async def execute_command(req: CommandRequest):
 
 # Static Frontend Hosting
 frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+src_dir = os.path.join(frontend_dir, "src")
+
 if os.path.isdir(frontend_dir):
     app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+    if os.path.isdir(src_dir):
+        app.mount("/src", StaticFiles(directory=src_dir), name="src")
 
     @app.get("/")
     async def serve_index():

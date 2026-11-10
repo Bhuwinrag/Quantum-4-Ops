@@ -47,3 +47,4 @@ export function getTabCompletions(currentInput) {
   const lower = currentInput.toLowerCase();
   return COMMAND_LIST.filter(c => c.toLowerCase().startsWith(lower));
 }
+

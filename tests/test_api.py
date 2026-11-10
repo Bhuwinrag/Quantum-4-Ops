@@ -80,3 +80,4 @@ def test_execute_endpoint_valid_command():
     data = response.json()
     assert data["status"] == "success"
     assert "QUANTUM//OPS WORKBENCH COMMAND MANUAL" in data["output"]
+

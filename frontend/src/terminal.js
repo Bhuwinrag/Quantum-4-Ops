@@ -21,7 +21,7 @@ export class QuantumTerminal {
     this.historyIndex = -1;
     this.isExecuting = false;
 
-    // ASCII Boot Banner
+    // ASCII Boot Banner (Clean technical header, no marketing tagline)
     this.bootBanner = [
       '\x1b[38;2;0;255;65m ██████╗ ██╗   ██╗ █████╗ ███╗   ██╗████████╗██╗   ██╗███╗   ███╗    ██████╗ ██████╗ ███████╗\x1b[0m',
       '\x1b[38;2;0;255;65m██╔═══██╗██║   ██║██╔══██╗████╗  ██║╚══██╔══╝██║   ██║████╗ ████║   ██╔═══██╗██╔══██╗██╔════╝\x1b[0m',
@@ -30,13 +30,11 @@ export class QuantumTerminal {
       '\x1b[38;2;0;255;65m╚██████╔╝╚██████╔╝██║  ██║██║ ╚████║   ██║   ╚██████╔╝██║ ╚═╝ ██║██╗╚██████╔╝██║     ███████║\x1b[0m',
       '\x1b[38;2;0;255;65m ╚══▀▀═╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝╚═╝ ╚═════╝ ╚═╝     ╚══════╝\x1b[0m',
       '\x1b[38;2;0;255;255m       QUANTUM HYBRID COMPUTING WORKBENCH  ::  v1.0.0-PROD\x1b[0m',
-      '\x1b[38;2;85;122;95m       BREAK THE BOUNDARIES OF COMPUTING.\x1b[0m',
       '\x1b[38;2;70;70;70m--------------------------------------------------------------------------------\x1b[0m',
     ];
   }
 
   async init() {
-    // Check if xterm is loaded globally from CDN or bundle
     const TerminalClass = window.Terminal;
     const FitAddonClass = window.FitAddon?.FitAddon;
 
@@ -92,25 +90,19 @@ export class QuantumTerminal {
   async runBootSequence() {
     for (const line of this.bootBanner) {
       this.term.writeln(line);
-      await this.sleep(25);
+      await this.sleep(20);
     }
 
     this.term.writeln('');
-    this.term.writeln('\x1b[38;2;0;255;65m[ OK ]\x1b[0m Loading core system');
-    await this.sleep(60);
+    this.term.writeln('\x1b[38;2;0;255;65m[ OK ]\x1b[0m Loading core system kernel');
+    await this.sleep(40);
     this.term.writeln('\x1b[38;2;0;255;65m[ OK ]\x1b[0m Initializing execution environment');
-    await this.sleep(60);
+    await this.sleep(40);
 
-    // Dynamic initial checks against API
+    // Dynamic initial checks against live API
     try {
       const resp = await fetch(`${this.apiBase}/api/modules`);
       const modules = await resp.json();
-
-      // Report actual module states
-      const cStatus = modules.cudaq?.status || 'unavailable';
-      const qStatus = modules.qiskit?.status || 'unavailable';
-      const nStatus = modules.nvqlink?.status || 'simulated';
-      const sStatus = modules.shor?.status || 'success';
 
       const tagMap = {
         success: '\x1b[38;2;0;255;65m[ OK ]\x1b[0m',
@@ -118,16 +110,21 @@ export class QuantumTerminal {
         unavailable: '\x1b[38;2;255;80;80m[ FAIL ]\x1b[0m',
       };
 
-      this.term.writeln(`${tagMap[cStatus] || '[ OK ]'} Loading CUDA-Q module (${cStatus})`);
-      await this.sleep(50);
-      this.term.writeln(`${tagMap[qStatus] || '[ OK ]'} Checking Qiskit connectivity (${qStatus})`);
-      await this.sleep(50);
-      this.term.writeln(`${tagMap[nStatus] || '[ SIM ]'} Loading NVQLink architecture module (${nStatus})`);
-      await this.sleep(50);
-      this.term.writeln(`${tagMap[sStatus] || '[ OK ]'} Loading Shor algorithm module (${sStatus})`);
-      await this.sleep(50);
+      const cStatus = modules.cudaq?.status || 'unavailable';
+      const qStatus = modules.qiskit?.status || 'unavailable';
+      const nStatus = modules.nvqlink?.status || 'unavailable';
+      const sStatus = modules.shor?.status || 'unavailable';
+
+      this.term.writeln(`${tagMap[cStatus] || '[ OK ]'} Module 01: CUDA-Q Engine (${cStatus.toUpperCase()})`);
+      await this.sleep(35);
+      this.term.writeln(`${tagMap[qStatus] || '[ OK ]'} Module 02: Qiskit Connectivity (${qStatus.toUpperCase()})`);
+      await this.sleep(35);
+      this.term.writeln(`${tagMap[nStatus] || '[ OK ]'} Module 03: NVQLink Architecture (${nStatus.toUpperCase()})`);
+      await this.sleep(35);
+      this.term.writeln(`${tagMap[sStatus] || '[ OK ]'} Module 04: Shor Algorithm (${sStatus.toUpperCase()})`);
+      await this.sleep(35);
     } catch (e) {
-      this.term.writeln('\x1b[38;2;255;180;0m[ WARN ]\x1b[0m Connecting to local FastAPI backend...');
+      this.term.writeln('\x1b[38;2;255;180;0m[ WARN ]\x1b[0m Probing local FastAPI backend...');
     }
 
     this.term.writeln('');
@@ -234,9 +231,8 @@ export class QuantumTerminal {
   }
 
   redrawLine() {
-    this.term.write('\r\x1b[K'); // carriage return and clear line
+    this.term.write('\r\x1b[K');
     this.term.write(this.promptStr + this.currentLine);
-    // Move cursor back to cursorPos
     const offset = this.currentLine.length - this.cursorPos;
     if (offset > 0) {
       this.term.write(`\x1b[${offset}D`);
@@ -249,11 +245,9 @@ export class QuantumTerminal {
       return;
     }
 
-    // Add to history
     this.history.push(cmdStr);
     this.historyIndex = -1;
 
-    // Handle client-side fast-path for clear
     if (cmdStr === 'clear' || cmdStr === 'cls') {
       this.term.clear();
       this.prompt();
@@ -276,12 +270,10 @@ export class QuantumTerminal {
       const data = await response.json();
       
       if (data.output) {
-        // Ensure newlines are CRLF for xterm.js
         const formatted = data.output.replace(/\r?\n/g, '\r\n');
         this.term.write(formatted);
       }
 
-      // Notify external listeners (e.g. status bar refresh)
       window.dispatchEvent(new CustomEvent('quantum-command-executed', { detail: data }));
     } catch (err) {
       this.term.writeln(`\x1b[38;2;255;75;75m[ERROR] Connection failed: ${err.message}\x1b[0m`);
@@ -292,9 +284,6 @@ export class QuantumTerminal {
     }
   }
 
-  /**
-   * Helper to programmatically run a command (e.g. clicking a quick button)
-   */
   executeExternal(cmd) {
     if (this.isExecuting) return;
     this.currentLine = cmd;

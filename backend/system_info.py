@@ -14,7 +14,6 @@ def get_full_system_info(module_statuses: Dict[str, str]) -> SystemInfoResponse:
     return SystemInfoResponse(
         system_name="QUANTUM//OPS",
         full_name="Quantum Hybrid Computing Workbench",
-        tagline="BREAK THE BOUNDARIES OF COMPUTING.",
         version="1.0.0-PROD",
         os=hw["os"],
         os_release=hw["os_release"],

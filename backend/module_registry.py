@@ -12,20 +12,20 @@ from typing import Dict, Any, Optional, Callable
 from backend.schemas import ModuleStatusResponse, ModuleExecutionResponse
 from backend.utils.logger import logger
 
-# Module definitions and metadata
+# Module definitions and metadata (Technical roles, no person names)
 MODULE_MANIFEST = {
     "cudaq": {
         "id": "cudaq",
         "display_name": "01 CUDA-Q ENGINE",
-        "owner": "Bhuwin Rag",
+        "role": "CUDA-Q Hybrid Kernel Simulation",
         "module_path": "backend.modules.cudaq_engine",
         "file_name": "cudaq_engine.py",
         "description": "NVIDIA CUDA-Q hybrid quantum-classical simulation platform",
     },
     "qiskit": {
         "id": "qiskit",
-        "display_name": "02 QISKIT API CONNECTIVITY",
-        "owner": "DSP",
+        "display_name": "02 QISKIT CONNECTIVITY",
+        "role": "Qiskit Statevector & IBM API",
         "module_path": "backend.modules.qiskit_connectivity",
         "file_name": "qiskit_connectivity.py",
         "description": "Qiskit local statevector simulator and IBM Quantum cloud connectivity",
@@ -33,7 +33,7 @@ MODULE_MANIFEST = {
     "nvqlink": {
         "id": "nvqlink",
         "display_name": "03 NVQLINK ARCHITECTURE",
-        "owner": "Yuva Sekhar",
+        "role": "Coherent GPU-QPU Memory Fabric",
         "module_path": "backend.modules.nvqlink_demo",
         "file_name": "nvqlink_demo.py",
         "description": "NVIDIA NVQLink coherent GPU-QPU memory fabric architecture simulation",
@@ -41,7 +41,7 @@ MODULE_MANIFEST = {
     "shor": {
         "id": "shor",
         "display_name": "04 SHOR'S ALGORITHM",
-        "owner": "Nikihil",
+        "role": "Quantum Factoring Engine (N=15)",
         "module_path": "backend.modules.shors_algorithm",
         "file_name": "shors_algorithm.py",
         "description": "Shor's quantum order-finding factorization demonstration (N = 15)",
@@ -94,7 +94,7 @@ class RegisteredModule:
             self.run_fn = run_fn
             self.loaded = True
             self.error_detail = None
-            logger.info(f"[{self.key.upper()}] Successfully registered by owner: {self.meta['owner']}")
+            logger.info(f"[{self.key.upper()}] Module slot registered: {self.meta['display_name']}")
 
         except Exception as e:
             self.loaded = False
@@ -112,7 +112,8 @@ class RegisteredModule:
                 description=self.meta["description"],
                 hardware_target=None,
                 message=self.error_detail or "Module is not available in current environment.",
-                details={"owner": self.meta["owner"], "file": self.meta["file_name"]},
+                results={"file": self.meta["file_name"], "status": "Not loaded"},
+                details={"file": self.meta["file_name"]},
             )
 
         try:
@@ -120,6 +121,13 @@ class RegisteredModule:
             # Normalize module display name
             raw["module"] = self.meta["display_name"]
             raw["description"] = self.meta["description"]
+            
+            # Ensure results and details are populated
+            if "results" not in raw and "details" in raw:
+                raw["results"] = raw["details"]
+            elif "details" not in raw and "results" in raw:
+                raw["details"] = raw["results"]
+
             status_obj = ModuleStatusResponse(**raw)
             self.cached_status = status_obj
             return status_obj
@@ -132,6 +140,7 @@ class RegisteredModule:
                 version=None,
                 description=self.meta["description"],
                 message=f"Status check exception: {str(ex)}",
+                results={"error": str(ex)},
                 details={"traceback": traceback.format_exc()},
             )
 
@@ -144,7 +153,7 @@ class RegisteredModule:
                 execution_mode="unavailable",
                 message=(
                     f"Execution halted: {self.meta['display_name']} is currently unavailable. "
-                    f"Owner [{self.meta['owner']}] implementation is pending integration."
+                    f"Implementation is pending integration."
                 ),
                 results={"error": self.error_detail or "Module not loaded."},
                 execution_time_ms=0.0,
@@ -162,6 +171,8 @@ class RegisteredModule:
                 raw["message"] = "Execution finished."
             if "results" not in raw:
                 raw["results"] = {}
+            if "details" not in raw:
+                raw["details"] = raw["results"]
             if "execution_time_ms" not in raw:
                 raw["execution_time_ms"] = 0.0
 
@@ -200,7 +211,7 @@ class ModuleRegistry:
         return {key: mod.query_status() for key, mod in self._modules.items()}
 
     def get_status_summary(self) -> Dict[str, str]:
-        """Returns brief status strings per module (e.g. {'cudaq': 'success'})."""
+        """Returns brief status strings per module (e.g. {'cudaq': 'unavailable'})."""
         return {key: mod.query_status().status for key, mod in self._modules.items()}
 
     def execute(self, module_key: str, payload: Dict[str, Any]) -> ModuleExecutionResponse:

@@ -19,6 +19,8 @@ ExecutionModeType = Literal[
 
 class ModuleStatusResponse(BaseModel):
     """Status contract returned by every module's get_status()."""
+    model_config = {"extra": "allow"}
+
     module: str
     status: StatusType
     execution_mode: ExecutionModeType
@@ -26,16 +28,21 @@ class ModuleStatusResponse(BaseModel):
     description: Optional[str] = None
     hardware_target: Optional[str] = None
     message: Optional[str] = None
+    results: Dict[str, Any] = Field(default_factory=dict)
     details: Dict[str, Any] = Field(default_factory=dict)
+    execution_time_ms: float = 0.0
 
 
 class ModuleExecutionResponse(BaseModel):
     """Execution contract returned by every module's run(payload)."""
+    model_config = {"extra": "allow"}
+
     module: str
     status: StatusType
     execution_mode: ExecutionModeType
     message: str
     results: Dict[str, Any] = Field(default_factory=dict)
+    details: Dict[str, Any] = Field(default_factory=dict)
     execution_time_ms: float = 0.0
     command: Optional[str] = None
     error: Optional[str] = None
@@ -61,7 +68,6 @@ class SystemInfoResponse(BaseModel):
     """Response returned by /api/system/info."""
     system_name: str = "QUANTUM//OPS"
     full_name: str = "Quantum Hybrid Computing Workbench"
-    tagline: str = "BREAK THE BOUNDARIES OF COMPUTING."
     version: str = "1.0.0-PROD"
     os: str
     os_release: str

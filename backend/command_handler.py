@@ -92,20 +92,20 @@ class CommandHandler:
     @classmethod
     def _handle_help(cls) -> CommandResponse:
         """Returns the formatted help index."""
-        headers = ["COMMAND", "DESCRIPTION", "OWNER / TARGET"]
+        headers = ["COMMAND", "DESCRIPTION", "SUBSYSTEM TARGET"]
         rows = [
             ["help", "Show workbench command reference", "Core System"],
             ["init", "Discover and initialize all 4 quantum modules", "System Kernel"],
-            ["system --info", "Query host architecture, CPU, RAM & GPU telemetry", "Hardware Detector"],
-            ["cudaq --status", "Inspect NVIDIA CUDA-Q status & available targets", "Bhuwin Rag (CUDA-Q)"],
-            ["cudaq --run", "Execute Bell-state quantum kernel on CUDA-Q engine", "Bhuwin Rag (CUDA-Q)"],
-            ["qiskit --status", "Query Qiskit framework & IBM Quantum config", "DSP (Qiskit)"],
-            ["qiskit --connect", "Test local CPU simulator / IBM API connection", "DSP (Qiskit)"],
-            ["qiskit --run", "Execute Bell-state circuit via Qiskit Statevector", "DSP (Qiskit)"],
-            ["nvqlink --status", "Query NVQLink GPU-QPU memory fabric status", "Yuva Sekhar (NVQLink)"],
-            ["nvqlink --simulate", "Run multi-stage GPU-QPU coherent memory test", "Yuva Sekhar (NVQLink)"],
-            ["shor --status", "Query Shor's quantum factoring engine status", "Nikihil (Shor)"],
-            ["shor --factor <N>", "Factor composite integer (default: N = 15)", "Nikihil (Shor)"],
+            ["system --info", "Query host architecture, CPU, RAM & GPU telemetry", "Hardware Telemetry"],
+            ["cudaq --status", "Inspect NVIDIA CUDA-Q status & available targets", "CUDA-Q Engine"],
+            ["cudaq --run", "Execute Bell-state quantum kernel on CUDA-Q engine", "CUDA-Q Engine"],
+            ["qiskit --status", "Query Qiskit framework & IBM Quantum config", "Qiskit Engine"],
+            ["qiskit --connect", "Test local CPU simulator / IBM API connection", "Qiskit Engine"],
+            ["qiskit --run", "Execute Bell-state circuit via Qiskit Statevector", "Qiskit Engine"],
+            ["nvqlink --status", "Query NVQLink GPU-QPU memory fabric status", "NVQLink Architecture"],
+            ["nvqlink --simulate", "Run multi-stage GPU-QPU coherent memory test", "NVQLink Architecture"],
+            ["shor --status", "Query Shor's quantum factoring engine status", "Shor Factoring Engine"],
+            ["shor --factor <N>", "Factor composite integer (default: N = 15)", "Shor Factoring Engine"],
             ["clear", "Clear terminal display buffer", "Terminal Core"],
             ["exit", "Gracefully terminate active terminal session", "Session Core"],
         ]
@@ -198,17 +198,16 @@ class CommandHandler:
                 f"{DARK_GRAY}{'─' * 60}{RESET}",
                 f"  Status        : {badge} {res.status.upper()}",
                 f"  Execution Mode: {CYAN}{res.execution_mode}{RESET}",
-                f"  Owner         : Bhuwin Rag (Team Lead)",
                 f"  Message       : {res.message}",
             ]
-            if res.results:
-                for k, v in res.results.items():
+            results_dict = getattr(res, "results", None) or getattr(res, "details", {})
+            if results_dict:
+                for k, v in results_dict.items():
                     out.append(f"  {k:<14}: {MUTED_GREEN}{v}{RESET}")
             out.append("")
             return CommandResponse(status=res.status, command="cudaq --status", output="\r\n".join(out), data=res.model_dump())
 
         elif args[0] in ("--run", "-r"):
-            allow_emul = "--emulate" in args or "-e" in args
             circuit_choice = "bell"
             for a in args:
                 if a in ("ghz", "superposition", "bell"):
@@ -216,7 +215,7 @@ class CommandHandler:
 
             res = await execution_manager.execute_module_async(
                 "cudaq",
-                {"circuit": circuit_choice, "shots": 1024, "allow_emulation": allow_emul}
+                {"circuit": circuit_choice, "shots": 1024}
             )
 
             badge = format_status_badge(res.status)
@@ -229,14 +228,17 @@ class CommandHandler:
                 f"  Message       : {res.message}",
             ]
 
+            results_dict = getattr(res, "results", None) or getattr(res, "details", {})
             if res.status in ("success", "simulated"):
-                counts = res.results.get("counts", {})
+                counts = results_dict.get("counts", {})
                 if counts:
                     out.append(f"\r\n{CYAN}Quantum Measurement Distribution (1024 shots):{RESET}")
                     out.append(format_histogram(counts))
             else:
-                out.append(f"\r\n{WARN_YELLOW}[NOTICE] {res.results.get('reason', '')}{RESET}")
-                out.append(f"{MUTED_GREEN}Tip: {res.results.get('command_hint', 'Run in Docker or use --emulate for preview.')}{RESET}")
+                if "reason" in results_dict:
+                    out.append(f"\r\n{WARN_YELLOW}[NOTICE] {results_dict.get('reason', '')}{RESET}")
+                if "resolution" in results_dict:
+                    out.append(f"{MUTED_GREEN}Resolution: {results_dict.get('resolution', '')}{RESET}")
 
             out.append("")
             return CommandResponse(status=res.status, command="cudaq --run", output="\r\n".join(out), data=res.model_dump())
@@ -254,30 +256,39 @@ class CommandHandler:
                 f"{DARK_GRAY}{'─' * 60}{RESET}",
                 f"  Status        : {badge} {res.status.upper()}",
                 f"  Execution Mode: {CYAN}{res.execution_mode}{RESET}",
-                f"  Owner         : DSP (Qiskit API Connectivity)",
                 f"  Message       : {res.message}",
             ]
-            if res.results:
-                for k, v in res.results.items():
+            results_dict = getattr(res, "results", None) or getattr(res, "details", {})
+            if results_dict:
+                for k, v in results_dict.items():
                     out.append(f"  {k:<20}: {MUTED_GREEN}{v}{RESET}")
             out.append("")
             return CommandResponse(status=res.status, command="qiskit --status", output="\r\n".join(out), data=res.model_dump())
 
         elif args[0] in ("--connect", "-c"):
             res = registry.get("qiskit").query_status()
-            token_conf = res.results.get("ibm_quantum_configured", False)
+            results_dict = getattr(res, "results", None) or getattr(res, "details", {})
+            token_conf = results_dict.get("ibm_quantum_configured", False)
             out = [
                 f"\r\n{CYAN}{BOLD}TESTING QISKIT RUNTIME CONNECTIVITY...{RESET}",
                 f"{DARK_GRAY}{'─' * 60}{RESET}",
-                f"  Local CPU Simulator  : {NEON_GREEN}[ ONLINE ]{RESET} Qiskit Aer/Statevector ready.",
-                f"  IBM Quantum Cloud API: " + (
-                    f"{NEON_GREEN}[ CONFIGURED ] Token active.{RESET}"
-                    if token_conf else
-                    f"{WARN_YELLOW}[ OPTIONAL ] Token not set in .env. Operating in CPU simulator mode.{RESET}"
-                ),
-                f"\r\n{MUTED_GREEN}System is ready for local quantum circuit execution.{RESET}\r\n",
+                f"  Status               : {format_status_badge(res.status)} {res.status.upper()}",
+                f"  Message              : {res.message}",
             ]
-            return CommandResponse(status="success", command="qiskit --connect", output="\r\n".join(out), data=res.model_dump())
+            if res.status == "success":
+                out.extend([
+                    f"  Local CPU Simulator  : {NEON_GREEN}[ ONLINE ]{RESET} Qiskit Statevector ready.",
+                    f"  IBM Quantum Cloud API: " + (
+                        f"{NEON_GREEN}[ CONFIGURED ] Token active.{RESET}"
+                        if token_conf else
+                        f"{WARN_YELLOW}[ OPTIONAL ] Token not set in .env. Operating in CPU simulator mode.{RESET}"
+                    ),
+                    f"\r\n{MUTED_GREEN}System is ready for local quantum circuit execution.{RESET}\r\n",
+                ])
+            else:
+                out.append(f"\r\n{MUTED_GREEN}Awaiting integration push to activate connectivity testing.{RESET}\r\n")
+
+            return CommandResponse(status=res.status, command="qiskit --connect", output="\r\n".join(out), data=res.model_dump())
 
         elif args[0] in ("--run", "-r"):
             circuit_choice = "bell"
@@ -297,7 +308,8 @@ class CommandHandler:
                 f"  Execution Time: {res.execution_time_ms} ms",
                 f"  Message       : {res.message}",
             ]
-            counts = res.results.get("counts", {})
+            results_dict = getattr(res, "results", None) or getattr(res, "details", {})
+            counts = results_dict.get("counts", {})
             if counts:
                 out.append(f"\r\n{CYAN}Quantum Measurement Distribution (1024 shots):{RESET}")
                 out.append(format_histogram(counts))
@@ -317,11 +329,11 @@ class CommandHandler:
                 f"{DARK_GRAY}{'─' * 60}{RESET}",
                 f"  Status        : {badge} {res.status.upper()}",
                 f"  Execution Mode: {CYAN}{res.execution_mode}{RESET}",
-                f"  Owner         : Yuva Sekhar (NVIDIA NVQLink)",
                 f"  Message       : {res.message}",
             ]
-            if res.results:
-                for k, v in res.results.items():
+            results_dict = getattr(res, "results", None) or getattr(res, "details", {})
+            if results_dict:
+                for k, v in results_dict.items():
                     out.append(f"  {k:<22}: {MUTED_GREEN}{v}{RESET}")
             out.append("")
             return CommandResponse(status=res.status, command="nvqlink --status", output="\r\n".join(out), data=res.model_dump())
@@ -329,19 +341,28 @@ class CommandHandler:
         elif args[0] in ("--simulate", "-s", "--run", "-r"):
             res = await execution_manager.execute_module_async("nvqlink", {"qubits": 8, "shots": 1000})
             badge = format_status_badge(res.status)
+            results_dict = getattr(res, "results", None) or getattr(res, "details", {})
+
             out = [
-                f"\r\n{NEON_GREEN}{BOLD}NVQLINK GPU-QPU INTERCONNECT TRANSMISSION PIPELINE{RESET}",
+                f"\r\n{NEON_GREEN}{BOLD}NVQLINK GPU-QPU INTERCONNECT STATUS{RESET}",
                 f"{DARK_GRAY}{'─' * 70}{RESET}",
-                f"  Status           : {badge} {res.status.upper()} (Architecture Simulation)",
-                f"  Job ID           : {CYAN}{res.results.get('job_id')}{RESET}",
-                f"  Bandwidth        : {NEON_GREEN}{res.results.get('bandwidth_achieved')}{RESET}",
-                f"  Interconnect Latency: {CYAN}{res.results.get('nvqlink_latency_us')} µs{RESET} (PCIe Gen5 baseline: {res.results.get('pcie_baseline_latency_us')} µs)",
-                f"  Latency Advantage: {NEON_GREEN}{res.results.get('latency_reduction_factor')}{RESET}",
-                f"\r\n{CYAN}PIPELINE STAGES COMPLETED:{RESET}",
+                f"  Status           : {badge} {res.status.upper()}",
+                f"  Message          : {res.message}",
             ]
-            for st in res.results.get("pipeline_stages", []):
-                out.append(f"  {NEON_GREEN}[✓] Step {st['step']}: {st['name']:<24}{RESET} -> {st['detail']}")
-            out.append(f"\r\n  {MUTED_GREEN}Notice: {res.results.get('notice')}{RESET}\r\n")
+            if res.status in ("success", "simulated"):
+                out.extend([
+                    f"  Job ID           : {CYAN}{results_dict.get('job_id')}{RESET}",
+                    f"  Bandwidth        : {NEON_GREEN}{results_dict.get('bandwidth_achieved')}{RESET}",
+                    f"  Interconnect Latency: {CYAN}{results_dict.get('nvqlink_latency_us')} µs{RESET} (PCIe Gen5 baseline: {results_dict.get('pcie_baseline_latency_us')} µs)",
+                    f"  Latency Advantage: {NEON_GREEN}{results_dict.get('latency_reduction_factor')}{RESET}",
+                    f"\r\n{CYAN}PIPELINE STAGES:{RESET}",
+                ])
+                for st in results_dict.get("pipeline_stages", []):
+                    out.append(f"  {NEON_GREEN}[✓] Step {st['step']}: {st['name']:<24}{RESET} -> {st['detail']}")
+                out.append(f"\r\n  {MUTED_GREEN}Notice: {results_dict.get('notice')}{RESET}\r\n")
+            else:
+                out.append(f"\r\n  {MUTED_GREEN}Integration pending: Awaiting teammate module push.{RESET}\r\n")
+
             return CommandResponse(status=res.status, command="nvqlink --simulate", output="\r\n".join(out), data=res.model_dump())
 
         return cls._handle_unknown(f"nvqlink {' '.join(args)}")
@@ -357,11 +378,11 @@ class CommandHandler:
                 f"{DARK_GRAY}{'─' * 60}{RESET}",
                 f"  Status        : {badge} {res.status.upper()}",
                 f"  Execution Mode: {CYAN}{res.execution_mode}{RESET}",
-                f"  Owner         : Nikihil (Shor's Algorithm)",
                 f"  Message       : {res.message}",
             ]
-            if res.results:
-                for k, v in res.results.items():
+            results_dict = getattr(res, "results", None) or getattr(res, "details", {})
+            if results_dict:
+                for k, v in results_dict.items():
                     out.append(f"  {k:<20}: {MUTED_GREEN}{v}{RESET}")
             out.append("")
             return CommandResponse(status=res.status, command="shor --status", output="\r\n".join(out), data=res.model_dump())
@@ -381,27 +402,33 @@ class CommandHandler:
 
             res = await execution_manager.execute_module_async("shor", {"number": number})
             badge = format_status_badge(res.status)
-            r_data = res.results
-            factors = r_data.get("factors", [])
+            results_dict = getattr(res, "results", None) or getattr(res, "details", {})
+            factors = results_dict.get("factors", [])
             factors_str = f"{factors[0]} × {factors[1]}" if len(factors) == 2 else "None"
 
             out = [
                 f"\r\n{NEON_GREEN}{BOLD}SHOR'S QUANTUM FACTORIZATION EXECUTION{RESET}",
                 f"{DARK_GRAY}{'─' * 65}{RESET}",
                 f"  Status            : {badge} {res.status.upper()}",
-                f"  Composite Input N : {CYAN}{r_data.get('input_number')}{RESET}",
-                f"  Coprime Base (a)  : {r_data.get('coprime_base_a')}",
-                f"  Quantum Period (r): {CYAN}{r_data.get('detected_period_r')}{RESET} (derived via order-finding)",
-                f"  Measured Phase (φ): {r_data.get('measured_phase')}",
-                f"  Discovered Factors: {NEON_GREEN}{BOLD}{factors_str}{RESET}",
-                f"  Verification Check: {NEON_GREEN}{r_data.get('verification_equation')}{RESET}",
-                f"  Execution Time    : {res.execution_time_ms} ms",
+                f"  Message           : {res.message}",
             ]
+            if res.status in ("success", "simulated"):
+                out.extend([
+                    f"  Composite Input N : {CYAN}{results_dict.get('input_number')}{RESET}",
+                    f"  Coprime Base (a)  : {results_dict.get('coprime_base_a')}",
+                    f"  Quantum Period (r): {CYAN}{results_dict.get('detected_period_r')}{RESET} (derived via order-finding)",
+                    f"  Measured Phase (φ): {results_dict.get('measured_phase')}",
+                    f"  Discovered Factors: {NEON_GREEN}{BOLD}{factors_str}{RESET}",
+                    f"  Verification Check: {NEON_GREEN}{results_dict.get('verification_equation')}{RESET}",
+                    f"  Execution Time    : {res.execution_time_ms} ms",
+                ])
+                counts = results_dict.get("counts", {})
+                if counts:
+                    out.append(f"\r\n{CYAN}Quantum Phase Estimation Measurement Histogram:{RESET}")
+                    out.append(format_histogram(counts))
+            else:
+                out.append(f"\r\n  {MUTED_GREEN}Integration pending: Awaiting teammate module push.{RESET}")
 
-            counts = r_data.get("counts", {})
-            if counts:
-                out.append(f"\r\n{CYAN}Quantum Phase Estimation Measurement Histogram:{RESET}")
-                out.append(format_histogram(counts))
             out.append("")
             return CommandResponse(status=res.status, command=f"shor --factor {number}", output="\r\n".join(out), data=res.model_dump())
 

@@ -225,3 +225,4 @@ git commit -m "feat(<module>): implement verified quantum logic"
 git push origin feature/<your-module>
 ```
 Submit a Pull Request to `main`. Bhuwin will review and merge!
+

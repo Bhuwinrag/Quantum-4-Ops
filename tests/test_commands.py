@@ -63,3 +63,4 @@ async def test_exit_command():
     resp = await CommandHandler.process("exit")
     assert resp.status == "success"
     assert "TERMINATED" in resp.output
+

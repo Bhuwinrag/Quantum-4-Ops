@@ -33,7 +33,6 @@ def get_boot_banner() -> str:
         f"{NEON_GREEN}╚██████╔╝╚██████╔╝██║  ██║██║ ╚████║   ██║   ╚██████╔╝██║ ╚═╝ ██║██╗╚██████╔╝██║     ███████║{RESET}",
         f"{NEON_GREEN} ╚══▀▀═╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝╚═╝ ╚═════╝ ╚═╝     ╚══════╝{RESET}",
         f"{CYAN}       QUANTUM HYBRID COMPUTING WORKBENCH  ::  v1.0.0-PROD{RESET}",
-        f"{MUTED_GREEN}       TAGLINE: BREAK THE BOUNDARIES OF COMPUTING.{RESET}",
         f"{DARK_GRAY}--------------------------------------------------------------------------------{RESET}",
     ]
     return "\r\n".join(lines)
@@ -67,7 +66,6 @@ def format_histogram(counts: Dict[str, int], width: int = 28) -> str:
     output.append(f"{CYAN}  STATE    COUNTS    PROBABILITY    DISTRIBUTION{RESET}")
     output.append(f"{DARK_GRAY}  ────────────────────────────────────────────────────────────{RESET}")
     
-    # Sort binary basis states (e.g. |00>, |01>, |10>, |11>)
     sorted_states = sorted(counts.keys())
     for state in sorted_states:
         c = counts[state]
@@ -88,17 +86,14 @@ def format_table(rows: List[List[str]], headers: List[str]) -> str:
             col_widths[idx] = max(col_widths[idx], len(str(cell)))
     
     lines = []
-    # Header
     header_str = "  ".join(
         f"{CYAN}{headers[i]:<{col_widths[i]}}{RESET}" for i in range(len(headers))
     )
     lines.append(header_str)
     
-    # Separator
     sep_str = "  ".join(f"{DARK_GRAY}{'─' * col_widths[i]}{RESET}" for i in range(len(headers)))
     lines.append(sep_str)
     
-    # Rows
     for row in rows:
         row_str = "  ".join(
             f"{BRIGHT_WHITE}{str(row[i]):<{col_widths[i]}}{RESET}" for i in range(len(row))

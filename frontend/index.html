@@ -12,16 +12,13 @@
 
   <!-- Cyberpunk Terminal Styles -->
   <link rel="stylesheet" href="/static/src/style.css" />
-  <!-- Fallback relative path if opened locally without server -->
-  <link rel="stylesheet" href="src/style.css" />
 </head>
 <body>
   <div class="workbench-container">
-    <!-- Top Telemetry HUD -->
+    <!-- Top Telemetry HUD (All values dynamically populated by API) -->
     <header class="hud-header">
       <div class="brand-section">
         <div class="brand-title">QUANTUM//OPS</div>
-        <div class="brand-tagline">BREAK THE BOUNDARIES OF COMPUTING.</div>
       </div>
       <div class="telemetry-group">
         <div class="telemetry-badge">
@@ -31,50 +28,50 @@
         </div>
         <div class="telemetry-badge">
           <span>HOST:</span>
-          <span id="telemetry-cpu">PROBING CPU...</span>
+          <span id="telemetry-cpu">PROBING HARDWARE...</span>
         </div>
         <div class="telemetry-badge">
           <span>EXEC MODE:</span>
-          <span id="telemetry-mode" style="color: var(--cyan-accent);">CPU_SIMULATOR</span>
+          <span id="telemetry-mode" style="color: var(--cyan-accent);">DETECTING...</span>
         </div>
-        <div class="telemetry-badge" style="color: var(--muted-green);">
-          v1.0.0-PROD
+        <div class="telemetry-badge" id="telemetry-version" style="color: var(--muted-green);">
+          v1.0.0
         </div>
       </div>
     </header>
 
-    <!-- 4 Module Chips Bar -->
+    <!-- 4 Module Chips Bar (Dynamic Status and Roles) -->
     <section class="modules-bar">
       <div class="module-chip" data-cmd="cudaq --status">
         <div class="chip-header">
           <span class="chip-title">01 CUDA-Q ENGINE</span>
           <span id="tag-cudaq" class="chip-tag unavailable">PROBING</span>
         </div>
-        <div class="chip-owner">Lead: Bhuwin Rag • Target: CPU/QPP</div>
+        <div class="chip-owner" id="sub-cudaq">Hybrid Quantum-Classical Target</div>
       </div>
 
       <div class="module-chip" data-cmd="qiskit --status">
         <div class="chip-header">
           <span class="chip-title">02 QISKIT CONNECTIVITY</span>
-          <span id="tag-qiskit" class="chip-tag success">ONLINE</span>
+          <span id="tag-qiskit" class="chip-tag unavailable">PROBING</span>
         </div>
-        <div class="chip-owner">Lead: DSP • Aer / IBM Runtime</div>
+        <div class="chip-owner" id="sub-qiskit">Circuit Simulation & IBM Cloud</div>
       </div>
 
       <div class="module-chip" data-cmd="nvqlink --status">
         <div class="chip-header">
           <span class="chip-title">03 NVQLINK ARCHITECTURE</span>
-          <span id="tag-nvqlink" class="chip-tag simulated">SIMULATED</span>
+          <span id="tag-nvqlink" class="chip-tag unavailable">PROBING</span>
         </div>
-        <div class="chip-owner">Lead: Yuva Sekhar • Coherent Fabric</div>
+        <div class="chip-owner" id="sub-nvqlink">Coherent GPU-QPU Memory Fabric</div>
       </div>
 
       <div class="module-chip" data-cmd="shor --status">
         <div class="chip-header">
           <span class="chip-title">04 SHOR'S ALGORITHM</span>
-          <span id="tag-shor" class="chip-tag success">ONLINE</span>
+          <span id="tag-shor" class="chip-tag unavailable">PROBING</span>
         </div>
-        <div class="chip-owner">Lead: Nikihil • Order Finding (N=15)</div>
+        <div class="chip-owner" id="sub-shor">Quantum Order-Finding Factoring</div>
       </div>
     </section>
 
@@ -99,7 +96,9 @@
       <button class="cmd-pill" data-cmd="cudaq --run">cudaq --run</button>
       <button class="cmd-pill" data-cmd="qiskit --status">qiskit --status</button>
       <button class="cmd-pill" data-cmd="qiskit --run">qiskit --run</button>
+      <button class="cmd-pill" data-cmd="nvqlink --status">nvqlink --status</button>
       <button class="cmd-pill" data-cmd="nvqlink --simulate">nvqlink --simulate</button>
+      <button class="cmd-pill" data-cmd="shor --status">shor --status</button>
       <button class="cmd-pill" data-cmd="shor --factor 15">shor --factor 15</button>
       <button class="cmd-pill" data-cmd="help">help</button>
       <button class="cmd-pill" data-cmd="clear">clear</button>
@@ -108,11 +107,5 @@
 
   <!-- Entry Script -->
   <script type="module" src="/static/src/main.js"></script>
-  <!-- Fallback for relative script loading if not behind /static -->
-  <script type="module">
-    if (!window.quantumTerminalLoaded) {
-      import('./src/main.js').catch(() => {});
-    }
-  </script>
 </body>
 </html>

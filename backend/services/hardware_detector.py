@@ -155,3 +155,4 @@ class HardwareDetector:
             "cuda_available": gpu["cuda_available"],
             "active_execution_mode": active_mode,
         }
+

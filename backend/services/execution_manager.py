@@ -48,3 +48,4 @@ class ExecutionManager:
 
 # Global execution manager singleton
 execution_manager = ExecutionManager()
+

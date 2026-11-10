@@ -1,6 +1,7 @@
 /**
  * QUANTUM//OPS - Main Frontend Entry Point
  * Orchestrates terminal lifecycle, telemetry HUD updates, and module chips.
+ * All metrics are 100% real and dynamically updated from the live backend API.
  */
 
 import { QuantumTerminal } from './terminal.js';
@@ -35,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Periodic telemetry refresh
+  // Dynamic telemetry refresh
   async function refreshTelemetry() {
     try {
       const [sysRes, modRes] = await Promise.all([
@@ -47,6 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sys = await sysRes.json();
         const modeEl = document.getElementById('telemetry-mode');
         const cpuEl = document.getElementById('telemetry-cpu');
+        const verEl = document.getElementById('telemetry-version');
         const connDot = document.getElementById('backend-status-dot');
         const connText = document.getElementById('backend-status-text');
 
@@ -57,10 +59,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           connText.textContent = 'ONLINE';
         }
         if (modeEl) {
-          modeEl.textContent = sys.active_execution_mode.toUpperCase();
+          modeEl.textContent = sys.active_execution_mode ? sys.active_execution_mode.toUpperCase() : 'CPU_SIMULATOR';
         }
         if (cpuEl) {
           cpuEl.textContent = `${sys.cpu_cores}C CPU | ${sys.ram_gb} GB`;
+          cpuEl.title = sys.cpu || 'CPU Telemetry';
+        }
+        if (verEl && sys.version) {
+          verEl.textContent = `v${sys.version}`;
         }
       }
 
@@ -81,10 +87,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     chipKeys.forEach((key) => {
       const mod = mods[key];
       if (!mod) return;
+      
       const tagEl = document.getElementById(`tag-${key}`);
+      const subEl = document.getElementById(`sub-${key}`);
+
       if (tagEl) {
-        tagEl.textContent = mod.status.toUpperCase();
+        const statusText = mod.status === 'unavailable' ? 'AWAITING PUSH' : mod.status.toUpperCase();
+        tagEl.textContent = statusText;
         tagEl.className = `chip-tag ${mod.status}`;
+      }
+
+      if (subEl && mod.execution_mode) {
+        const modeLabel = mod.execution_mode === 'unavailable' 
+          ? 'Integration Slot Ready' 
+          : `Mode: ${mod.execution_mode}`;
+        subEl.textContent = modeLabel;
       }
     });
   }
