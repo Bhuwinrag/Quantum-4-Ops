@@ -12,7 +12,7 @@ from typing import Dict, Any, Optional, Callable
 from backend.schemas import ModuleStatusResponse, ModuleExecutionResponse
 from backend.utils.logger import logger
 
-# Module definitions and metadata (Technical roles, no person names)
+# Module definitions and metadata
 MODULE_MANIFEST = {
     "cudaq": {
         "id": "cudaq",
@@ -70,8 +70,8 @@ class RegisteredModule:
             target_file = os.path.join(module_dir, "modules", self.meta["file_name"])
             if not os.path.isfile(target_file):
                 self.loaded = False
-                self.error_detail = f"Module file not found: {self.meta['file_name']}"
-                logger.warning(f"[{self.key.upper()}] {self.error_detail}")
+                self.error_detail = f"Module file not found: {self.meta['file_name']} (awaiting teammate push)"
+                logger.info(f"[{self.key.upper()}] Integration slot ready: awaiting {self.meta['file_name']}")
                 return
 
             # Import or reload
@@ -94,7 +94,7 @@ class RegisteredModule:
             self.run_fn = run_fn
             self.loaded = True
             self.error_detail = None
-            logger.info(f"[{self.key.upper()}] Module slot registered: {self.meta['display_name']}")
+            logger.info(f"[{self.key.upper()}] Module loaded: {self.meta['display_name']}")
 
         except Exception as e:
             self.loaded = False
@@ -111,18 +111,20 @@ class RegisteredModule:
                 version=None,
                 description=self.meta["description"],
                 hardware_target=None,
-                message=self.error_detail or "Module is not available in current environment.",
-                results={"file": self.meta["file_name"], "status": "Not loaded"},
+                message=self.error_detail or f"Integration slot ready: awaiting {self.meta['file_name']} from teammate push.",
+                results={
+                    "file": self.meta["file_name"],
+                    "status": "Awaiting teammate push",
+                    "integrated": False,
+                },
                 details={"file": self.meta["file_name"]},
             )
 
         try:
             raw = self.get_status_fn()
-            # Normalize module display name
             raw["module"] = self.meta["display_name"]
             raw["description"] = self.meta["description"]
-            
-            # Ensure results and details are populated
+
             if "results" not in raw and "details" in raw:
                 raw["results"] = raw["details"]
             elif "details" not in raw and "results" in raw:
@@ -152,16 +154,15 @@ class RegisteredModule:
                 status="unavailable",
                 execution_mode="unavailable",
                 message=(
-                    f"Execution halted: {self.meta['display_name']} is currently unavailable. "
-                    f"Implementation is pending integration."
+                    f"Execution halted: {self.meta['display_name']} ({self.meta['file_name']}) has not been pushed yet. "
+                    f"Awaiting teammate contribution."
                 ),
-                results={"error": self.error_detail or "Module not loaded."},
+                results={"file": self.meta["file_name"], "integrated": False},
                 execution_time_ms=0.0,
             )
 
         try:
             raw = self.run_fn(payload)
-            # Ensure module name matches
             raw["module"] = self.meta["display_name"]
             if "status" not in raw:
                 raw["status"] = "success"
