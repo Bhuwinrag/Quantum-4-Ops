@@ -16,12 +16,11 @@ def test_registry_discovery():
         st = mod.query_status()
         assert st.module
         assert st.status in ("success", "simulated", "unavailable", "error")
-        # Ensure results attribute is present and accessible
         assert hasattr(st, "results")
         assert isinstance(st.results, dict)
 
 
-def test_cudaq_contract():
+def test_cudaq_contract_and_execution():
     """Verify CUDA-Q module complies with contract."""
     status = cudaq_engine.get_status()
     assert isinstance(status, dict)
@@ -36,46 +35,56 @@ def test_cudaq_contract():
     assert exec_res["status"] in ("success", "unavailable")
 
 
-def test_qiskit_contract_and_integration_slot():
-    """Verify Qiskit integration slot adheres to team contract."""
+def test_qiskit_circuit_simulation():
+    """Verify Qiskit local simulation works out-of-the-box on CPU."""
     status = qiskit_connectivity.get_status()
     assert isinstance(status, dict)
     assert status["module"] == "Qiskit"
-    assert status["status"] in ("success", "unavailable")
-    assert "execution_mode" in status
-    assert "results" in status
+    assert status["status"] == "success"
+    assert status["execution_mode"] in ("cpu_simulator", "remote_hardware")
 
     result = qiskit_connectivity.run({"circuit": "bell", "shots": 500})
     assert isinstance(result, dict)
-    assert result["status"] in ("success", "unavailable")
+    assert result["status"] == "success"
+    assert "counts" in result["results"]
+    counts = result["results"]["counts"]
+    assert "00" in counts or "11" in counts
 
 
-def test_nvqlink_contract_and_integration_slot():
-    """Verify NVQLink integration slot adheres to team contract."""
+def test_nvqlink_architecture_simulation():
+    """Verify NVQLink architecture simulation stages and telemetry."""
     status = nvqlink_demo.get_status()
-    assert isinstance(status, dict)
     assert status["module"] == "NVQLink"
-    assert status["status"] in ("simulated", "unavailable")
-    assert "execution_mode" in status
-    assert "results" in status
+    assert status["status"] == "simulated"
+    assert status["execution_mode"] == "architecture_simulation"
 
     result = nvqlink_demo.run({"qubits": 8, "shots": 1000})
-    assert isinstance(result, dict)
-    assert result["status"] in ("simulated", "unavailable")
+    assert result["status"] == "simulated"
+    assert "job_id" in result["results"]
+    assert "pipeline_stages" in result["results"]
+    assert len(result["results"]["pipeline_stages"]) == 4
 
 
-def test_shors_algorithm_contract_and_integration_slot():
-    """Verify Shor's algorithm integration slot adheres to team contract."""
+def test_shors_algorithm_factoring_15():
+    """Verify Shor's algorithm factors 15 mathematically into 3 and 5."""
     status = shors_algorithm.get_status()
-    assert isinstance(status, dict)
     assert status["module"] == "Shor"
-    assert status["status"] in ("success", "unavailable")
-    assert "execution_mode" in status
-    assert "results" in status
+    assert status["status"] == "success"
 
     result = shors_algorithm.run({"number": 15})
-    assert isinstance(result, dict)
-    assert result["status"] in ("success", "unavailable")
+    assert result["status"] == "success"
+    r_data = result["results"]
+    assert r_data["input_number"] == 15
+    factors = r_data["factors"]
+    assert sorted(factors) == [3, 5]
+    assert 3 * 5 == 15
+
+
+def test_shors_algorithm_invalid_prime():
+    """Verify prime number input handles gracefully."""
+    result = shors_algorithm.run({"number": 7})
+    assert result["status"] == "error"
+    assert "prime" in result["message"].lower()
 
 
 def test_missing_module_graceful_handling():
