@@ -60,6 +60,7 @@ async def favicon():
     return Response(content=svg_icon, media_type="image/svg+xml")
 
 
+@app.get("/health", include_in_schema=False)
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint."""
