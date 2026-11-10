@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QUANTUM//OPS — Quantum Hybrid Computing Workbench</title>
+  
+  <!-- xterm.js CDN stylesheets & scripts -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+
+  <!-- Cyberpunk Terminal Styles -->
+  <link rel="stylesheet" href="/static/src/style.css" />
+  <!-- Fallback relative path if opened locally without server -->
+  <link rel="stylesheet" href="src/style.css" />
+</head>
+<body>
+  <div class="workbench-container">
+    <!-- Top Telemetry HUD -->
+    <header class="hud-header">
+      <div class="brand-section">
+        <div class="brand-title">QUANTUM//OPS</div>
+        <div class="brand-tagline">BREAK THE BOUNDARIES OF COMPUTING.</div>
+      </div>
+      <div class="telemetry-group">
+        <div class="telemetry-badge">
+          <span id="backend-status-dot" class="status-dot pulse"></span>
+          <span>API:</span>
+          <span id="backend-status-text">CONNECTING</span>
+        </div>
+        <div class="telemetry-badge">
+          <span>HOST:</span>
+          <span id="telemetry-cpu">PROBING CPU...</span>
+        </div>
+        <div class="telemetry-badge">
+          <span>EXEC MODE:</span>
+          <span id="telemetry-mode" style="color: var(--cyan-accent);">CPU_SIMULATOR</span>
+        </div>
+        <div class="telemetry-badge" style="color: var(--muted-green);">
+          v1.0.0-PROD
+        </div>
+      </div>
+    </header>
+
+    <!-- 4 Module Chips Bar -->
+    <section class="modules-bar">
+      <div class="module-chip" data-cmd="cudaq --status">
+        <div class="chip-header">
+          <span class="chip-title">01 CUDA-Q ENGINE</span>
+          <span id="tag-cudaq" class="chip-tag unavailable">PROBING</span>
+        </div>
+        <div class="chip-owner">Lead: Bhuwin Rag • Target: CPU/QPP</div>
+      </div>
+
+      <div class="module-chip" data-cmd="qiskit --status">
+        <div class="chip-header">
+          <span class="chip-title">02 QISKIT CONNECTIVITY</span>
+          <span id="tag-qiskit" class="chip-tag success">ONLINE</span>
+        </div>
+        <div class="chip-owner">Lead: DSP • Aer / IBM Runtime</div>
+      </div>
+
+      <div class="module-chip" data-cmd="nvqlink --status">
+        <div class="chip-header">
+          <span class="chip-title">03 NVQLINK ARCHITECTURE</span>
+          <span id="tag-nvqlink" class="chip-tag simulated">SIMULATED</span>
+        </div>
+        <div class="chip-owner">Lead: Yuva Sekhar • Coherent Fabric</div>
+      </div>
+
+      <div class="module-chip" data-cmd="shor --status">
+        <div class="chip-header">
+          <span class="chip-title">04 SHOR'S ALGORITHM</span>
+          <span id="tag-shor" class="chip-tag success">ONLINE</span>
+        </div>
+        <div class="chip-owner">Lead: Nikihil • Order Finding (N=15)</div>
+      </div>
+    </section>
+
+    <!-- Main Terminal Workspace -->
+    <main class="terminal-wrapper">
+      <div class="terminal-header">
+        <div class="terminal-title">SHELL // QUANTUM-OPS-CORE-TTY1</div>
+        <div class="terminal-controls">
+          <button id="btn-help" class="term-btn" title="View Command Index">HELP</button>
+          <button id="btn-clear" class="term-btn" title="Clear Terminal">CLEAR</button>
+        </div>
+      </div>
+      <div id="terminal-container"></div>
+    </main>
+
+    <!-- Quick Action Strip -->
+    <footer class="quick-commands">
+      <span class="quick-label">QUICK DISPATCH:</span>
+      <button class="cmd-pill" data-cmd="init">init</button>
+      <button class="cmd-pill" data-cmd="system --info">system --info</button>
+      <button class="cmd-pill" data-cmd="cudaq --status">cudaq --status</button>
+      <button class="cmd-pill" data-cmd="cudaq --run">cudaq --run</button>
+      <button class="cmd-pill" data-cmd="qiskit --status">qiskit --status</button>
+      <button class="cmd-pill" data-cmd="qiskit --run">qiskit --run</button>
+      <button class="cmd-pill" data-cmd="nvqlink --simulate">nvqlink --simulate</button>
+      <button class="cmd-pill" data-cmd="shor --factor 15">shor --factor 15</button>
+      <button class="cmd-pill" data-cmd="help">help</button>
+      <button class="cmd-pill" data-cmd="clear">clear</button>
+    </footer>
+  </div>
+
+  <!-- Entry Script -->
+  <script type="module" src="/static/src/main.js"></script>
+  <!-- Fallback for relative script loading if not behind /static -->
+  <script type="module">
+    if (!window.quantumTerminalLoaded) {
+      import('./src/main.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

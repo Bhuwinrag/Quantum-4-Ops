@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Standard CPU-Only Workbench (Runs everywhere without GPU requirement)
+  quantum-ops-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quantum-ops-workbench
+    ports:
+      - "8000:8000"
+    environment:
+      - QUANTUM_ENV=production
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEFAULT_SIMULATION_BACKEND=cpu_simulator
+      - IBM_QUANTUM_TOKEN=${IBM_QUANTUM_TOKEN:-}
+    restart: unless-stopped
+
+  # Optional GPU-Accelerated Workbench (For machines with NVIDIA RTX 40-series GPU)
+  quantum-ops-gpu:
+    profiles: ["gpu"]
+    image: ghcr.io/nvidia/cuda-quantum:latest
+    container_name: quantum-ops-gpu-workbench
+    working_dir: /app
+    ports:
+      - "8001:8000"
+    volumes:
+      - .:/app
+    environment:
+      - QUANTUM_ENV=production
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEFAULT_SIMULATION_BACKEND=gpu_simulator
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: bash -c "pip install -r requirements.txt && uvicorn backend.main:app --host 0.0.0.0 --port 8000"
