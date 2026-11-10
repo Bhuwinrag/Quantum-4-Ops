@@ -1,10 +1,8 @@
 # QUANTUM//OPS
 ### QUANTUM HYBRID COMPUTING WORKBENCH
-> **BREAK THE BOUNDARIES OF COMPUTING.**
 
 ---
 
-![QUANTUM//OPS UI](https://img.shields.io/badge/INTERFACE-CYBERPUNK%20TERMINAL-00FF41?style=for-the-badge&logo=gnubash&logoColor=black)
 ![PYTHON](https://img.shields.io/badge/BACKEND-FASTAPI%20%7C%20PYTHON-00FFFF?style=for-the-badge&logo=fastapi&logoColor=black)
 ![EXECUTION](https://img.shields.io/badge/EXECUTION-CPU%20%7C%20GPU%20OPTIONAL-557A5F?style=for-the-badge)
 ![LICENSE](https://img.shields.io/badge/LICENSE-MIT-00FF41?style=for-the-badge)
